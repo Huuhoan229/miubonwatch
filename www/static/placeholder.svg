@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+  <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#0c1022"/><stop offset="1" stop-color="#062b31"/></linearGradient></defs>
+  <rect width="640" height="360" rx="24" fill="url(#g)"/>
+  <path d="M281 126v108l98-54-98-54z" fill="#16d3d0" opacity=".9"/>
+  <text x="320" y="285" fill="#9ca3d7" font-family="Arial" font-size="24" text-anchor="middle">MiuBon Watch</text>
+</svg>

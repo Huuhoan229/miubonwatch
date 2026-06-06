@@ -1,0 +1,17 @@
+{
+  "name": "miubonwatch-ios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MiuBon Watch iOS client for rendered video library",
+  "scripts": {
+    "cap:sync": "npx cap sync ios",
+    "cap:copy": "npx cap copy ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/ios": "^8.3.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.4"
+  }
+}
