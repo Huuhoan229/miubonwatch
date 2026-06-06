@@ -21,9 +21,20 @@
   const esc = (s) => String(s ?? '').replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
   const normApi = (base) => String(base || DEFAULT_API).trim().replace(/\/+$/, '');
   const apiUrl = (path) => `${normApi(API)}${String(path).startsWith('/') ? path : `/${path}`}`;
-  const episodeNo = (ep, fallback) => Number(ep.episode || ep.ep || ep.episode_number || fallback + 1) || fallback + 1;
-  const folderKey = (item) => item?.series_folder || item?.folder || item?.project_id || item?.project_name || item?.name || 'unknown';
-  const metadata = (ep) => ep.metadata || ep.meta || {};
+  const metadata = (ep) => ep?.metadata || ep?.meta || {};
+  const seriesContext = (ep) => ep?.series_context || metadata(ep).series_context || {};
+  const parseEpisodeFromText = (text) => {
+    const s = String(text || '');
+    const m = s.match(/(?:T\u1eadp|Tap|Ep|Episode|\u7b2c)\s*(\d{1,5})/i);
+    return m ? Number(m[1]) : null;
+  };
+  const episodeNo = (ep, fallback) => {
+    const ctx = seriesContext(ep);
+    const raw = ep?._ep_no || ep?.episode_no || ep?.episode || ep?.ep || ep?.episode_number || ctx.episode_no || metadata(ep).episode_no || parseEpisodeFromText(ep?.title || metadata(ep).title || metadata(ep).episode_tag || ep?.douyin_meta?.douyin_title || '');
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : fallback + 1;
+  };
+  const folderKey = (item) => item?.series_folder || seriesContext(item).series_folder || item?.folder || item?.project_id || item?.project_name || item?.name || 'unknown';
   const driveFileId = (ep) => ep.gdrive_file_id || ep.drive_file_id || metadata(ep).gdrive_file_id || metadata(ep).drive_file_id || '';
   const finalExists = (ep) => ep.final_video || metadata(ep).final_video || ep.is_complete || ep.progress >= 100;
 
@@ -102,7 +113,8 @@
       const thumb = apiUrl(`/api/project/${encodeURIComponent(first.project_id || first.project_name || first.name)}/stream/thumbnail.jpg`);
       const key = folderKey(item);
       const p = progressMap[key] || {};
-      const watched = p.ep_index != null ? `Đã xem: tập ${Number(p.ep_index) + 1}` : 'Chưa xem';
+      const watchedEp = p.ep_no || (p.ep_index != null && eps[p.ep_index] ? episodeNo(eps[p.ep_index], Number(p.ep_index)) : null);
+      const watched = watchedEp ? `\u0110\u00e3 xem: t\u1eadp ${watchedEp}` : 'Ch\u01b0a xem';
       return `<button class="card" data-index="${idx}">
         <img src="${thumb}" alt="" onerror="this.src='static/placeholder.svg'" />
         <span class="badge">${eps.length} video</span>
@@ -174,7 +186,7 @@
     const ep = episodes[currentIndex];
     if (!ep) return;
     const player = $('videoPlayer');
-    $('watchMeta').textContent = `${episodeTitle(ep, currentIndex)} | ${currentIndex + 1}/${episodes.length}`;
+    $('watchMeta').textContent = `${episodeTitle(ep, currentIndex)} | v\u1ecb tr\u00ed ${currentIndex + 1}/${episodes.length}`;
     $('serverHint').textContent = '';
     player.src = videoSource(ep);
     player.load();
@@ -189,11 +201,11 @@
     const player = $('videoPlayer');
     if (!force && (!player.currentTime || player.currentTime < 2)) return;
     const key = folderKey(currentItem);
-    progressMap[key] = { ep_index: currentIndex, time: Math.floor(player.currentTime || 0), updated_at: new Date().toISOString() };
+    progressMap[key] = { ep_index: currentIndex, ep_no: episodeNo(episodes[currentIndex], currentIndex), time: Math.floor(player.currentTime || 0), updated_at: new Date().toISOString() };
     try {
       await request('/api/user/progress', {
         method: 'POST',
-        body: JSON.stringify({ folder: key, ep_index: currentIndex, time: Math.floor(player.currentTime || 0) }),
+        body: JSON.stringify({ folder: key, ep_index: currentIndex, ep_no: episodeNo(episodes[currentIndex], currentIndex), time: Math.floor(player.currentTime || 0) }),
       });
     } catch (e) {
       $('accountStatus').textContent = `Lưu tiến độ lỗi: ${e.message}`;
