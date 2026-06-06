@@ -1,0 +1,68 @@
+name: Build TrollStore IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-ipa:
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync Capacitor web assets
+        run: npx cap sync ios
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build unsigned iOS app
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            build
+
+      - name: Package IPA for TrollStore
+        run: |
+          set -euo pipefail
+          APP_PATH="build/Build/Products/Release-iphoneos/App.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "App bundle not found: $APP_PATH"
+            find build -maxdepth 6 -type d -name "*.app" -print
+            exit 1
+          fi
+          rm -rf dist Payload
+          mkdir -p dist Payload
+          cp -R "$APP_PATH" Payload/
+          /usr/bin/zip -qry "dist/MiuBonWatch-TrollStore.ipa" Payload
+          ls -lh dist/MiuBonWatch-TrollStore.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MiuBonWatch-TrollStore-IPA
+          path: dist/MiuBonWatch-TrollStore.ipa
+          if-no-files-found: error
+          retention-days: 30
