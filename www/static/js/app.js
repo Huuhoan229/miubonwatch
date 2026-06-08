@@ -117,12 +117,14 @@
       const watched = watchedEp ? `\u0110\u00e3 xem: t\u1eadp ${watchedEp}` : 'Ch\u01b0a xem';
       return `<button class="card" data-index="${idx}">
         <img src="${thumb}" alt="" onerror="this.src='static/placeholder.svg'" />
-        <span class="badge">${eps.length} video</span>
-        <h3>${esc(title)}</h3>
-        <p>${currentKind === 'series' ? `Rendered: ${eps.length}/${item.max_episode || item.max || eps.length}` : 'Phim lẻ đã render'}</p>
-        <small>${esc(watched)}</small>
+        <div class="card-badge">${eps.length} Tập</div>
+        <div class="card-info">
+          <h3>${esc(title)}</h3>
+          <p>${currentKind === 'series' ? `${eps.length}/${item.max_episode || item.max || eps.length} Rendered` : 'Hoàn tất'}</p>
+          <small>${esc(watched)}</small>
+        </div>
       </button>`;
-    }).join('') || '<div class="empty">Không có video render hoàn tất.</div>';
+    }).join('') || '<div class="empty">Chưa có video nào.</div>';
 
     $('libraryGrid').querySelectorAll('.card').forEach((btn) => {
       btn.addEventListener('click', () => openItem(Number(btn.dataset.index)));
@@ -291,7 +293,10 @@
     $('refreshBtn').addEventListener('click', () => loadLibrary().catch((e) => setStatus(e.message)));
     $('backendBtn').addEventListener('click', () => { $('backendInput').value = API; $('backendDialog').showModal(); });
     $('saveBackendBtn').addEventListener('click', () => { API = normApi($('backendInput').value); localStorage.setItem(LS.api, API); setTimeout(() => loadLibrary().catch((e) => setStatus(e.message)), 50); });
-    $('closeWatchBtn').addEventListener('click', () => { saveProgress(true); $('videoPlayer').pause(); $('watchPanel').classList.add('hidden'); });
+    const closeModal = () => { saveProgress(true); $('videoPlayer').pause(); $('watchPanel').classList.add('hidden'); };
+    $('closeWatchBtn').addEventListener('click', closeModal);
+    const backdrop = document.getElementById('closeWatchBackdrop');
+    if (backdrop) backdrop.addEventListener('click', closeModal);
     $('prevBtn').addEventListener('click', () => { if (currentIndex > 0) { saveProgress(true); currentIndex--; playCurrent(0); } });
     $('nextBtn').addEventListener('click', () => { if (currentIndex < episodes.length - 1) { saveProgress(true); currentIndex++; playCurrent(0); } });
     $('episodeSearch').addEventListener('input', renderEpisodes);
