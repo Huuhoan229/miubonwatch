@@ -181,7 +181,7 @@
     } else {
       $('serverHint').textContent = '';
     }
-    return apiUrl(`/api/project/${project}/stream/final_video.mp4`);
+    return apiUrl(`/api/project/${project}/stream/final_video.mp4?v=faststart`);
   }
 
   function playCurrent(seekTime = 0) {
